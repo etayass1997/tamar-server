@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import anthropic
 import requests as http_requests
@@ -137,6 +137,11 @@ def web_search(query):
         return '\n\n'.join(parts)
     except Exception as e:
         return f"שגיאת חיפוש: {e}"
+
+
+@app.route('/', methods=['GET'])
+def index():
+    return send_file(os.path.join(os.path.dirname(__file__), 'תמר.html'))
 
 
 @app.route('/health', methods=['GET'])
