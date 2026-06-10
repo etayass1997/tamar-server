@@ -226,10 +226,11 @@
   }
   .input-row:focus-within { border-color: var(--accent-light); }
   #user-input {
-    flex: 1; border: none; background: transparent;
+    flex: 1; min-width: 0; border: none; background: transparent;
     font-family: var(--font); font-size: 15px; color: var(--text);
     resize: none; outline: none; max-height: 120px; min-height: 28px;
     line-height: 1.5; padding: 4px 0; direction: rtl;
+    overflow-y: hidden;
   }
   #user-input::placeholder { color: var(--text-muted); }
   .send-btn {
@@ -433,7 +434,7 @@ function handleKey(e) {
 }
 
 function autoResize(el) {
-  el.style.height = 'auto';
+  el.style.height = '1px';
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 
