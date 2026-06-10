@@ -597,31 +597,50 @@ function ttsSpeak(text, btn) {
     window.speechSynthesis.cancel();
     ttsActiveBtn.classList.remove('speaking');
     ttsActiveBtn.textContent = '🔈';
+    ttsActiveBtn = null;
   }
 
-  const utt  = new SpeechSynthesisUtterance(ttsStrip(text));
-  utt.lang   = 'he-IL';
-  utt.rate   = 0.92;
-  utt.pitch  = 1.05;
+  const doSpeak = () => {
+    window.speechSynthesis.cancel();
+    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
 
-  const setVoice = () => {
+    const utt = new SpeechSynthesisUtterance(ttsStrip(text));
+    utt.lang  = 'he-IL';
+    utt.rate  = 0.9;
+    utt.pitch = 1.05;
+
     const voices  = window.speechSynthesis.getVoices();
-    const heVoice = voices.find(v => v.lang.startsWith('he'));
+    const heVoice = voices.find(v => v.lang && v.lang.startsWith('he'));
     if (heVoice) utt.voice = heVoice;
-  };
-  setVoice();
-  if (!utt.voice) window.speechSynthesis.onvoiceschanged = () => { setVoice(); };
 
-  utt.onend = utt.onerror = () => {
-    btn.classList.remove('speaking');
-    btn.textContent = '🔈';
-    ttsActiveBtn = null;
+    utt.onend = () => {
+      btn.classList.remove('speaking');
+      btn.textContent = '🔈';
+      ttsActiveBtn = null;
+    };
+    utt.onerror = (e) => {
+      console.warn('TTS error:', e.error);
+      btn.classList.remove('speaking');
+      btn.textContent = '🔈';
+      ttsActiveBtn = null;
+    };
+
+    btn.classList.add('speaking');
+    btn.textContent = '⏹️';
+    ttsActiveBtn = btn;
+    window.speechSynthesis.speak(utt);
   };
 
-  btn.classList.add('speaking');
-  btn.textContent = '⏹️';
-  ttsActiveBtn = btn;
-  window.speechSynthesis.speak(utt);
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length > 0) {
+    doSpeak();
+  } else {
+    window.speechSynthesis.addEventListener('voiceschanged', function once() {
+      window.speechSynthesis.removeEventListener('voiceschanged', once);
+      doSpeak();
+    });
+    setTimeout(() => { if (!btn.classList.contains('speaking')) doSpeak(); }, 1000);
+  }
 }
 
 // ── Init ──
