@@ -167,6 +167,17 @@
   .msg.user .msg-time { text-align: right; }
   .msg.ai   .msg-time { text-align: left; }
 
+  .tts-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-muted); font-size: 15px;
+    padding: 3px 7px; border-radius: 8px; margin-top: 4px;
+    transition: color .15s, background .15s;
+    align-self: flex-start; line-height: 1;
+  }
+  .tts-btn:hover { color: var(--accent); background: var(--surface); }
+  .tts-btn.speaking { color: var(--accent); background: var(--surface); animation: pulse-tts 1.2s infinite; }
+  @keyframes pulse-tts { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+
   .typing .bubble { padding: 14px 18px; }
   .dots { display: flex; gap: 5px; }
   .dots span {
@@ -488,6 +499,15 @@ function appendMsg(role, text) {
   inner.appendChild(bubble);
   inner.appendChild(time);
 
+  if (role === 'ai') {
+    const ttsBtn = document.createElement('button');
+    ttsBtn.className   = 'tts-btn';
+    ttsBtn.textContent = '🔈';
+    ttsBtn.title       = 'האזיני לתשובה';
+    ttsBtn.onclick     = () => ttsSpeak(text, ttsBtn);
+    inner.appendChild(ttsBtn);
+  }
+
   el.appendChild(avatar);
   el.appendChild(inner);
   container.appendChild(el);
@@ -544,6 +564,63 @@ function hideWelcome() {
 
 function setSendDisabled(v) {
   document.getElementById('send-btn').disabled = v;
+}
+
+// ── TTS ──
+let ttsActiveBtn = null;
+
+function ttsStrip(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/^#{2,3} (.+)$/gm, '$1')
+    .replace(/^[•\-] /gm, '')
+    .replace(/^\d+\. /gm, '')
+    .replace(/\n{2,}/g, '. ')
+    .replace(/\n/g, ' ')
+    .trim();
+}
+
+function ttsSpeak(text, btn) {
+  if (!window.speechSynthesis) return;
+
+  if (btn.classList.contains('speaking')) {
+    window.speechSynthesis.cancel();
+    btn.classList.remove('speaking');
+    btn.textContent = '🔈';
+    ttsActiveBtn = null;
+    return;
+  }
+
+  if (ttsActiveBtn) {
+    window.speechSynthesis.cancel();
+    ttsActiveBtn.classList.remove('speaking');
+    ttsActiveBtn.textContent = '🔈';
+  }
+
+  const utt  = new SpeechSynthesisUtterance(ttsStrip(text));
+  utt.lang   = 'he-IL';
+  utt.rate   = 0.92;
+  utt.pitch  = 1.05;
+
+  const setVoice = () => {
+    const voices  = window.speechSynthesis.getVoices();
+    const heVoice = voices.find(v => v.lang.startsWith('he'));
+    if (heVoice) utt.voice = heVoice;
+  };
+  setVoice();
+  if (!utt.voice) window.speechSynthesis.onvoiceschanged = () => { setVoice(); };
+
+  utt.onend = utt.onerror = () => {
+    btn.classList.remove('speaking');
+    btn.textContent = '🔈';
+    ttsActiveBtn = null;
+  };
+
+  btn.classList.add('speaking');
+  btn.textContent = '⏹️';
+  ttsActiveBtn = btn;
+  window.speechSynthesis.speak(utt);
 }
 
 // ── Init ──
