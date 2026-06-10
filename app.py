@@ -6,7 +6,7 @@ import os
 import subprocess
 import sys
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 CORS(app, origins="*")
 
 KNOWLEDGE_BASE_PATH = os.path.join(os.path.dirname(__file__), 'knowledge_base.txt')
