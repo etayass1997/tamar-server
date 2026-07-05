@@ -62,6 +62,7 @@
   }
   .header-name { font-size: 18px; font-weight: 700; color: var(--text); }
   .header-sub  { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+  .header-right { display: flex; align-items: center; gap: 8px; }
   .kb-badge {
     font-size: 11px; padding: 4px 10px; border-radius: 20px;
     background: var(--green-bg); color: var(--green);
@@ -69,6 +70,14 @@
     display: none; align-items: center; gap: 5px;
   }
   .kb-badge.visible { display: inline-flex; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: transparent; border: 1px solid var(--border-soft);
+    color: var(--text-dim); font-size: 17px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .icon-btn:hover { background: var(--surface); color: var(--accent); border-color: var(--border); }
 
   /* ── BODY ── */
   .body { display: flex; flex: 1; overflow: hidden; }
@@ -167,15 +176,18 @@
   .msg.user .msg-time { text-align: right; }
   .msg.ai   .msg-time { text-align: left; }
 
-  .tts-btn {
+  /* ── MSG ACTIONS ── */
+  .msg-actions { display: flex; gap: 6px; margin-top: 5px; padding: 0 4px; }
+  .msg-action-btn {
     background: none; border: none; cursor: pointer;
-    color: var(--text-muted); font-size: 15px;
-    padding: 3px 7px; border-radius: 8px; margin-top: 4px;
+    color: var(--text-muted); font-size: 13px;
+    padding: 4px 8px; border-radius: 8px;
     transition: color .15s, background .15s;
-    align-self: flex-start; line-height: 1;
+    font-family: var(--font); display: flex; align-items: center; gap: 4px;
+    line-height: 1;
   }
-  .tts-btn:hover { color: var(--accent); background: var(--surface); }
-  .tts-btn.speaking { color: var(--accent); background: var(--surface); animation: pulse-tts 1.2s infinite; }
+  .msg-action-btn:hover { color: var(--accent); background: var(--surface); }
+  .msg-action-btn.speaking { color: var(--accent); background: var(--surface); animation: pulse-tts 1.2s infinite; }
   @keyframes pulse-tts { 0%,100% { opacity:1; } 50% { opacity:.5; } }
 
   .typing .bubble { padding: 14px 18px; }
@@ -245,6 +257,176 @@
   .send-btn:disabled { background: var(--surface2); cursor: default; }
   .send-btn:disabled svg { fill: var(--text-muted); }
 
+  /* ── MODAL OVERLAY ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(61,43,31,.45);
+    z-index: 200; display: flex; align-items: center; justify-content: center;
+    padding: 20px; opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: var(--bg); border-radius: 20px;
+    border: 1px solid var(--border); box-shadow: 0 8px 40px rgba(61,43,31,.18);
+    width: 100%; max-width: 460px; max-height: 85vh;
+    display: flex; flex-direction: column;
+    transform: scale(.95) translateY(8px); transition: transform .25s;
+  }
+  .modal-overlay.open .modal { transform: scale(1) translateY(0); }
+
+  .modal-header {
+    padding: 20px 22px 16px;
+    border-bottom: 1px solid var(--border-soft);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .modal-title { font-size: 17px; font-weight: 700; color: var(--text); }
+  .modal-close {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: transparent; border: 1px solid var(--border-soft);
+    color: var(--text-muted); font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .modal-close:hover { background: var(--surface); color: var(--accent); }
+
+  .modal-body {
+    padding: 20px 22px; overflow-y: auto; flex: 1;
+  }
+  .modal-body::-webkit-scrollbar { width: 4px; }
+  .modal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .modal-footer {
+    padding: 14px 22px 20px;
+    border-top: 1px solid var(--border-soft);
+    display: flex; gap: 10px; flex-shrink: 0;
+  }
+
+  /* ── SHOPPING LIST STYLES ── */
+  .sl-category { margin-bottom: 18px; }
+  .sl-cat-title {
+    font-size: 11px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--text-muted);
+    margin-bottom: 8px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .sl-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 0; border-bottom: 1px dashed var(--border-soft);
+  }
+  .sl-item:last-child { border-bottom: none; }
+  .sl-checkbox {
+    width: 18px; height: 18px; border-radius: 5px;
+    border: 1.5px solid var(--border); background: white;
+    cursor: pointer; flex-shrink: 0; display: flex;
+    align-items: center; justify-content: center;
+    transition: all .15s; color: var(--accent); font-size: 11px;
+  }
+  .sl-checkbox.checked { background: var(--accent); border-color: var(--accent); color: white; }
+  .sl-name { flex: 1; font-size: 14px; color: var(--text); }
+  .sl-name.checked { text-decoration: line-through; color: var(--text-muted); }
+  .sl-amount { font-size: 13px; color: var(--text-dim); font-weight: 500; }
+  .sl-loading { text-align: center; padding: 30px; color: var(--text-dim); font-size: 14px; }
+  .sl-dots { display: flex; gap: 5px; justify-content: center; margin-bottom: 10px; }
+  .sl-dots span {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent-light); animation: dot 1.2s infinite;
+  }
+  .sl-dots span:nth-child(2) { animation-delay: .2s; }
+  .sl-dots span:nth-child(3) { animation-delay: .4s; }
+
+  /* ── PREFERENCES STYLES ── */
+  .pref-section { margin-bottom: 22px; }
+  .pref-label {
+    font-size: 12px; font-weight: 600; color: var(--text-dim);
+    margin-bottom: 10px; display: block;
+  }
+  .pref-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pref-chip {
+    padding: 6px 14px; border-radius: 20px;
+    border: 1.5px solid var(--border); background: transparent;
+    font-family: var(--font); font-size: 13px; color: var(--text-dim);
+    cursor: pointer; transition: all .15s;
+  }
+  .pref-chip:hover { border-color: var(--accent-light); color: var(--accent); }
+  .pref-chip.active {
+    border-color: var(--accent); background: #FFF0E8;
+    color: var(--accent); font-weight: 600;
+  }
+  .pref-input {
+    width: 100%; padding: 10px 13px;
+    background: var(--surface); border: 1.5px solid var(--border-soft);
+    border-radius: 10px; color: var(--text);
+    font-family: var(--font); font-size: 14px; outline: none;
+    transition: border-color .2s;
+  }
+  .pref-input:focus { border-color: var(--accent-light); }
+  .pref-size-row { display: flex; align-items: center; gap: 12px; }
+  .pref-size-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--surface); border: 1.5px solid var(--border);
+    color: var(--text); font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s; flex-shrink: 0;
+  }
+  .pref-size-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .pref-size-val { font-size: 20px; font-weight: 700; color: var(--text); min-width: 28px; text-align: center; }
+
+  /* ── ADMIN STYLES ── */
+  .admin-section { margin-bottom: 20px; }
+  .admin-label {
+    font-size: 12px; font-weight: 600; color: var(--text-dim);
+    margin-bottom: 8px; display: block;
+  }
+  .admin-textarea {
+    width: 100%; padding: 10px 13px;
+    background: var(--surface); border: 1.5px solid var(--border-soft);
+    border-radius: 10px; color: var(--text);
+    font-family: var(--font); font-size: 13px; outline: none;
+    resize: vertical; min-height: 80px; direction: ltr; text-align: left;
+    transition: border-color .2s;
+  }
+  .admin-textarea:focus { border-color: var(--accent-light); }
+  .admin-hint { font-size: 11px; color: var(--text-muted); margin-top: 5px; }
+  .scrape-progress {
+    display: none; align-items: center; gap: 10px;
+    padding: 10px 13px; background: var(--green-bg);
+    border: 1px solid #C5DDB0; border-radius: 10px;
+    font-size: 13px; color: #4A6B30; margin-top: 10px;
+  }
+  .scrape-progress.visible { display: flex; }
+  .scrape-progress.error { background: #FFF0EE; border-color: #F5C4B8; color: var(--accent-dark); }
+  .progress-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+  .progress-dot.spin { animation: spin .8s linear infinite; border-radius: 50%; border: 2px solid #C5DDB0; border-top-color: var(--green); background: transparent; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── BUTTONS ── */
+  .btn-primary {
+    flex: 1; padding: 12px;
+    background: var(--accent); border: none; border-radius: 12px;
+    color: white; font-family: var(--font); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: background .15s, transform .1s;
+  }
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-primary:active { transform: scale(.98); }
+  .btn-primary:disabled { background: var(--surface2); color: var(--text-muted); cursor: not-allowed; }
+  .btn-secondary {
+    padding: 12px 18px;
+    background: transparent; border: 1.5px solid var(--border);
+    border-radius: 12px; color: var(--text-dim);
+    font-family: var(--font); font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: all .15s;
+  }
+  .btn-secondary:hover { border-color: var(--border); color: var(--text); background: var(--surface); }
+  .btn-danger {
+    padding: 11px 18px;
+    background: transparent; border: 1.5px solid #F5C4B8;
+    border-radius: 12px; color: var(--accent-dark);
+    font-family: var(--font); font-size: 13px;
+    cursor: pointer; transition: all .15s;
+  }
+  .btn-danger:hover { background: #FFF0EE; }
+
   /* ── RESPONSIVE ── */
   @media (max-width: 640px) {
     :root { --sidebar-w: 0px; }
@@ -281,7 +463,11 @@
         <div class="header-sub">עוזרת המטבח האישית שלך</div>
       </div>
     </div>
-    <span class="kb-badge" id="kb-badge">📚 <span id="kb-size">0</span> KB</span>
+    <div class="header-right">
+      <span class="kb-badge" id="kb-badge">📚 <span id="kb-size">0</span> KB</span>
+      <button class="icon-btn" title="העדפות תזונה" onclick="openModal('pref-modal')">⚙️</button>
+      <button class="icon-btn" title="ניהול מאגר ידע" onclick="openModal('admin-modal')">🗄️</button>
+    </div>
   </header>
 
   <div class="body">
@@ -364,6 +550,112 @@
   </div>
 </div>
 
+<!-- ══ SHOPPING LIST MODAL ══ -->
+<div class="modal-overlay" id="sl-modal" onclick="overlayClick(event,'sl-modal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">🛒 רשימת קניות</span>
+      <button class="modal-close" onclick="closeModal('sl-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="sl-body">
+      <div class="sl-loading">
+        <div class="sl-dots"><span></span><span></span><span></span></div>
+        מכינה רשימת קניות...
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="copySL()">⎘ העתק רשימה</button>
+      <button class="btn-primary" onclick="closeModal('sl-modal')">סיום</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PREFERENCES MODAL ══ -->
+<div class="modal-overlay" id="pref-modal" onclick="overlayClick(event,'pref-modal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">⚙️ העדפות תזונה</span>
+      <button class="modal-close" onclick="closeModal('pref-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="pref-section">
+        <span class="pref-label">הגבלות תזונתיות</span>
+        <div class="pref-chips" id="dietary-chips">
+          <button class="pref-chip" data-val="ללא גלוטן">ללא גלוטן</button>
+          <button class="pref-chip" data-val="טבעוני">טבעוני</button>
+          <button class="pref-chip" data-val="צמחוני">צמחוני</button>
+          <button class="pref-chip" data-val="ללא לקטוז">ללא לקטוז</button>
+          <button class="pref-chip" data-val="ללא סוכר">ללא סוכר</button>
+          <button class="pref-chip" data-val="ללא פחמימות">ללא פחמימות</button>
+          <button class="pref-chip" data-val="כשר לפסח">כשר לפסח</button>
+        </div>
+      </div>
+
+      <div class="pref-section">
+        <span class="pref-label">מספר סועדים</span>
+        <div class="pref-size-row">
+          <button class="pref-size-btn" onclick="changeFamilySize(-1)">−</button>
+          <span class="pref-size-val" id="family-size-val">4</span>
+          <button class="pref-size-btn" onclick="changeFamilySize(1)">+</button>
+          <span style="font-size:13px;color:var(--text-muted);">אנשים</span>
+        </div>
+      </div>
+
+      <div class="pref-section">
+        <span class="pref-label">אלרגיות</span>
+        <input class="pref-input" id="pref-allergies" placeholder="לדוגמא: בוטנים, דגים, סויה…" />
+      </div>
+
+      <div class="pref-section">
+        <span class="pref-label">הערות נוספות</span>
+        <input class="pref-input" id="pref-notes" placeholder="לדוגמא: מטבח ספרדי, מזון מהיר, ארוחות זולות…" />
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="clearPrefs()">נקה הכל</button>
+      <button class="btn-primary" onclick="savePrefs()">שמור העדפות</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADMIN MODAL ══ -->
+<div class="modal-overlay" id="admin-modal" onclick="overlayClick(event,'admin-modal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">🗄️ ניהול מאגר ידע</span>
+      <button class="modal-close" onclick="closeModal('admin-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="admin-section">
+        <span class="admin-label">סרוק אתרי מתכונים</span>
+        <textarea class="admin-textarea" id="scrape-urls"
+          placeholder="https://www.orit.co.il/recipe/...&#10;https://www.10.co.il/kulinaria/...&#10;(כתובת אחת בכל שורה)"></textarea>
+        <div class="admin-hint">תמר תסרוק את האתרים ותוסיף את המתכונים למאגר הידע הפנימי שלה.</div>
+        <div class="scrape-progress" id="scrape-progress">
+          <div class="progress-dot" id="scrape-dot"></div>
+          <span id="scrape-msg">סורקת...</span>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <span class="admin-label">סטטוס מאגר</span>
+        <div style="font-size:13px;color:var(--text-dim);background:var(--surface);padding:10px 13px;border-radius:10px;border:1px solid var(--border-soft);">
+          📚 מאגר ידע: <strong id="admin-kb-size">בודקת...</strong>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-danger" onclick="clearKB()">🗑️ מחק מאגר</button>
+      <button class="btn-secondary" onclick="closeModal('admin-modal')">סגור</button>
+      <button class="btn-primary" id="scrape-btn" onclick="startScrape()">סרוק עכשיו</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const SERVER_URL = window.location.origin;
 
@@ -384,8 +676,75 @@ const CATEGORIES = [
 let messages   = [];
 let currentCat = '';
 let isLoading  = false;
+let preferences = loadPrefs();
+let slCurrentItems = [];
 
-// ── Mobile categories ──
+/* ══ PREFERENCES ══ */
+const PREFS_KEY = 'tamar_prefs_v1';
+
+function loadPrefs() {
+  try { return JSON.parse(localStorage.getItem(PREFS_KEY) || '{}'); } catch { return {}; }
+}
+
+function savePrefs() {
+  const dietary = [...document.querySelectorAll('#dietary-chips .pref-chip.active')].map(el => el.dataset.val);
+  const allergies = document.getElementById('pref-allergies').value.trim();
+  const notes = document.getElementById('pref-notes').value.trim();
+  const family_size = parseInt(document.getElementById('family-size-val').textContent) || 4;
+
+  preferences = { dietary, allergies, notes, family_size };
+  localStorage.setItem(PREFS_KEY, JSON.stringify(preferences));
+  closeModal('pref-modal');
+  showToast('העדפות נשמרו!');
+}
+
+function clearPrefs() {
+  preferences = {};
+  localStorage.removeItem(PREFS_KEY);
+  document.querySelectorAll('#dietary-chips .pref-chip').forEach(el => el.classList.remove('active'));
+  document.getElementById('pref-allergies').value = '';
+  document.getElementById('pref-notes').value = '';
+  document.getElementById('family-size-val').textContent = '4';
+  showToast('העדפות נוקו');
+}
+
+function openPrefModal() {
+  const p = preferences;
+  const dietary = p.dietary || [];
+  document.querySelectorAll('#dietary-chips .pref-chip').forEach(el => {
+    el.classList.toggle('active', dietary.includes(el.dataset.val));
+  });
+  document.getElementById('pref-allergies').value = p.allergies || '';
+  document.getElementById('pref-notes').value = p.notes || '';
+  document.getElementById('family-size-val').textContent = p.family_size || 4;
+}
+
+function changeFamilySize(delta) {
+  const el = document.getElementById('family-size-val');
+  const val = Math.max(1, Math.min(20, (parseInt(el.textContent) || 4) + delta));
+  el.textContent = val;
+}
+
+document.querySelectorAll('#dietary-chips .pref-chip').forEach(el => {
+  el.addEventListener('click', () => el.classList.toggle('active'));
+});
+
+/* ══ MODAL HELPERS ══ */
+function openModal(id) {
+  if (id === 'pref-modal') openPrefModal();
+  if (id === 'admin-modal') refreshAdminStatus();
+  document.getElementById(id).classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function overlayClick(e, id) {
+  if (e.target === document.getElementById(id)) closeModal(id);
+}
+
+/* ══ MOBILE CATEGORIES ══ */
 function buildMobileCats() {
   const container = document.getElementById('mobile-cats');
   CATEGORIES.forEach(c => {
@@ -423,7 +782,7 @@ function clearCat() {
   updateCatBar();
 }
 
-// ── Messaging ──
+/* ══ MESSAGING ══ */
 function sendQuick(text) {
   document.getElementById('user-input').value = text;
   sendMessage();
@@ -457,7 +816,7 @@ async function sendMessage() {
     const res  = await fetch(`${SERVER_URL}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, category: currentCat })
+      body: JSON.stringify({ messages, category: currentCat, preferences })
     });
     const data = await res.json();
     typingEl.remove();
@@ -501,12 +860,35 @@ function appendMsg(role, text) {
   inner.appendChild(time);
 
   if (role === 'ai') {
+    const actions = document.createElement('div');
+    actions.className = 'msg-actions';
+
     const ttsBtn = document.createElement('button');
-    ttsBtn.className   = 'tts-btn';
-    ttsBtn.textContent = '🔈';
+    ttsBtn.className   = 'msg-action-btn';
+    ttsBtn.textContent = '🔈 האזני';
     ttsBtn.title       = 'האזיני לתשובה';
     ttsBtn.onclick     = () => ttsSpeak(text, ttsBtn);
-    inner.appendChild(ttsBtn);
+
+    const slBtn = document.createElement('button');
+    slBtn.className   = 'msg-action-btn';
+    slBtn.textContent = '🛒 קניות';
+    slBtn.title       = 'צרי רשימת קניות';
+    slBtn.onclick     = () => openShoppingList(text);
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className   = 'msg-action-btn';
+    copyBtn.textContent = '⎘ העתק';
+    copyBtn.title       = 'העתק תשובה';
+    copyBtn.onclick     = async () => {
+      await navigator.clipboard.writeText(text).catch(() => {});
+      copyBtn.textContent = '✓ הועתק';
+      setTimeout(() => { copyBtn.textContent = '⎘ העתק'; }, 2000);
+    };
+
+    actions.appendChild(ttsBtn);
+    actions.appendChild(slBtn);
+    actions.appendChild(copyBtn);
+    inner.appendChild(actions);
   }
 
   el.appendChild(avatar);
@@ -567,8 +949,165 @@ function setSendDisabled(v) {
   document.getElementById('send-btn').disabled = v;
 }
 
-// ── TTS ──
-let ttsActiveBtn = null;
+/* ══ SHOPPING LIST ══ */
+async function openShoppingList(recipeText) {
+  openModal('sl-modal');
+  const body = document.getElementById('sl-body');
+  body.innerHTML = `<div class="sl-loading"><div class="sl-dots"><span></span><span></span><span></span></div>מכינה רשימת קניות...</div>`;
+  slCurrentItems = [];
+
+  try {
+    const res = await fetch(`${SERVER_URL}/shopping-list`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recipe: recipeText })
+    });
+    const data = await res.json();
+
+    if (data.error || !data.items) {
+      body.innerHTML = `<div class="sl-loading" style="color:var(--accent)">⚠️ ${data.error || 'לא הצלחתי ליצור רשימה'}</div>`;
+      return;
+    }
+
+    slCurrentItems = data.items;
+    const grouped = {};
+    data.items.forEach(item => {
+      const cat = item.category || 'שונות';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(item);
+    });
+
+    const CAT_ICONS = {
+      'ירקות ופירות': '🥦', 'בשר ועוף': '🥩', 'מוצרי חלב וביצים': '🧀',
+      'לחם ומאפייה': '🍞', 'שמנים ותבלינים': '🧂', 'קטניות ודגנים': '🌾', 'שונות': '🛒'
+    };
+
+    let html = '';
+    for (const [cat, items] of Object.entries(grouped)) {
+      const icon = CAT_ICONS[cat] || '🛒';
+      html += `<div class="sl-category">
+        <div class="sl-cat-title">${icon} ${cat}</div>`;
+      items.forEach((item, idx) => {
+        const globalIdx = slCurrentItems.indexOf(item);
+        html += `<div class="sl-item" id="sl-item-${globalIdx}">
+          <div class="sl-checkbox" id="sl-cb-${globalIdx}" onclick="toggleSLItem(${globalIdx})"></div>
+          <span class="sl-name" id="sl-name-${globalIdx}">${item.name}</span>
+          <span class="sl-amount">${item.amount || ''}</span>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    body.innerHTML = html;
+  } catch (e) {
+    body.innerHTML = `<div class="sl-loading" style="color:var(--accent)">⚠️ שגיאה: ${e.message}</div>`;
+  }
+}
+
+function toggleSLItem(idx) {
+  const cb = document.getElementById(`sl-cb-${idx}`);
+  const name = document.getElementById(`sl-name-${idx}`);
+  const checked = cb.classList.toggle('checked');
+  cb.textContent = checked ? '✓' : '';
+  name.classList.toggle('checked', checked);
+}
+
+function copySL() {
+  const lines = slCurrentItems.map(item => `• ${item.name}${item.amount ? ' — ' + item.amount : ''}`);
+  const text = 'רשימת קניות:\n' + lines.join('\n');
+  navigator.clipboard.writeText(text).catch(() => {});
+  showToast('הרשימה הועתקה!');
+}
+
+/* ══ ADMIN ══ */
+let scrapeJobId = null;
+let scrapeTimer = null;
+
+function refreshAdminStatus() {
+  fetch(`${SERVER_URL}/health`).then(r => r.json()).then(d => {
+    const el = document.getElementById('admin-kb-size');
+    if (d.knowledge_base_exists && d.knowledge_base_size_kb > 0) {
+      el.textContent = `${d.knowledge_base_size_kb} KB — פעיל`;
+      el.style.color = 'var(--green)';
+    } else {
+      el.textContent = 'ריק';
+      el.style.color = 'var(--text-dim)';
+    }
+  }).catch(() => {
+    document.getElementById('admin-kb-size').textContent = 'שגיאה בחיבור';
+  });
+}
+
+async function startScrape() {
+  const urlsRaw = document.getElementById('scrape-urls').value.trim();
+  if (!urlsRaw) { showToast('יש להזין כתובות URL'); return; }
+
+  const urls = urlsRaw.split('\n').map(u => u.trim()).filter(u => u.startsWith('http'));
+  if (!urls.length) { showToast('לא נמצאו כתובות תקינות'); return; }
+
+  document.getElementById('scrape-btn').disabled = true;
+  const prog = document.getElementById('scrape-progress');
+  const dot  = document.getElementById('scrape-dot');
+  const msg  = document.getElementById('scrape-msg');
+
+  prog.className = 'scrape-progress visible';
+  dot.className  = 'progress-dot spin';
+  msg.textContent = 'מתחיל סריקה...';
+
+  try {
+    const res  = await fetch(`${SERVER_URL}/scrape`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ urls })
+    });
+    const data = await res.json();
+    scrapeJobId = data.job_id;
+    pollScrapeStatus();
+  } catch (e) {
+    prog.className = 'scrape-progress visible error';
+    dot.className  = 'progress-dot';
+    msg.textContent = 'שגיאה: ' + e.message;
+    document.getElementById('scrape-btn').disabled = false;
+  }
+}
+
+function pollScrapeStatus() {
+  if (!scrapeJobId) return;
+  const prog = document.getElementById('scrape-progress');
+  const dot  = document.getElementById('scrape-dot');
+  const msg  = document.getElementById('scrape-msg');
+
+  fetch(`${SERVER_URL}/scrape-status/${scrapeJobId}`)
+    .then(r => r.json())
+    .then(data => {
+      msg.textContent = data.message || '';
+      if (data.status === 'running') {
+        scrapeTimer = setTimeout(pollScrapeStatus, 2000);
+      } else if (data.status === 'done') {
+        dot.className = 'progress-dot';
+        dot.style.background = 'var(--green)';
+        document.getElementById('scrape-btn').disabled = false;
+        refreshAdminStatus();
+        refreshKBBadge();
+      } else {
+        prog.className = 'scrape-progress visible error';
+        dot.className  = 'progress-dot';
+        document.getElementById('scrape-btn').disabled = false;
+      }
+    })
+    .catch(() => { scrapeTimer = setTimeout(pollScrapeStatus, 3000); });
+}
+
+async function clearKB() {
+  if (!confirm('למחוק את כל מאגר הידע?')) return;
+  await fetch(`${SERVER_URL}/clear-kb`, { method: 'POST' });
+  refreshAdminStatus();
+  refreshKBBadge();
+  showToast('מאגר הידע נמחק');
+}
+
+/* ══ TTS ══ */
+let ttsActiveBtn   = null;
+let ttsActiveAudio = null;
 
 function ttsStrip(text) {
   return text
@@ -582,83 +1121,84 @@ function ttsStrip(text) {
     .trim();
 }
 
-function ttsSpeak(text, btn) {
-  if (!window.speechSynthesis) return;
-
-  if (btn.classList.contains('speaking')) {
-    window.speechSynthesis.cancel();
-    btn.classList.remove('speaking');
-    btn.textContent = '🔈';
-    ttsActiveBtn = null;
-    return;
+function ttsStop() {
+  if (ttsActiveAudio) {
+    ttsActiveAudio.pause();
+    ttsActiveAudio = null;
   }
-
   if (ttsActiveBtn) {
-    window.speechSynthesis.cancel();
     ttsActiveBtn.classList.remove('speaking');
-    ttsActiveBtn.textContent = '🔈';
+    ttsActiveBtn.textContent = '🔈 האזני';
     ttsActiveBtn = null;
-  }
-
-  const doSpeak = () => {
-    window.speechSynthesis.cancel();
-    if (window.speechSynthesis.paused) window.speechSynthesis.resume();
-
-    const utt = new SpeechSynthesisUtterance(ttsStrip(text));
-    utt.lang  = 'he-IL';
-    utt.rate  = 0.9;
-    utt.pitch = 1.05;
-
-    const voices  = window.speechSynthesis.getVoices();
-    const heVoice = voices.find(v => v.lang && v.lang.startsWith('he'));
-    if (heVoice) utt.voice = heVoice;
-
-    utt.onend = () => {
-      btn.classList.remove('speaking');
-      btn.textContent = '🔈';
-      ttsActiveBtn = null;
-    };
-    utt.onerror = (e) => {
-      console.warn('TTS error:', e.error);
-      btn.classList.remove('speaking');
-      btn.textContent = '🔈';
-      ttsActiveBtn = null;
-    };
-
-    btn.classList.add('speaking');
-    btn.textContent = '⏹️';
-    ttsActiveBtn = btn;
-    window.speechSynthesis.speak(utt);
-  };
-
-  const voices = window.speechSynthesis.getVoices();
-  if (voices.length > 0) {
-    doSpeak();
-  } else {
-    window.speechSynthesis.addEventListener('voiceschanged', function once() {
-      window.speechSynthesis.removeEventListener('voiceschanged', once);
-      doSpeak();
-    });
-    setTimeout(() => { if (!btn.classList.contains('speaking')) doSpeak(); }, 1000);
   }
 }
 
-// ── Init ──
+async function ttsSpeak(text, btn) {
+  if (btn.classList.contains('speaking')) { ttsStop(); return; }
+  ttsStop();
+
+  btn.classList.add('speaking');
+  btn.textContent = '⏳';
+  ttsActiveBtn = btn;
+
+  try {
+    const res = await fetch(SERVER_URL + '/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: ttsStrip(text) })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+
+    const blob  = await res.blob();
+    const url   = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    ttsActiveAudio = audio;
+    btn.textContent = '⏹️ עצרי';
+
+    audio.onended = () => { URL.revokeObjectURL(url); ttsStop(); };
+    audio.onerror = () => { URL.revokeObjectURL(url); ttsStop(); };
+    audio.play();
+  } catch (e) {
+    console.warn('TTS error:', e);
+    ttsStop();
+  }
+}
+
+/* ══ TOAST ══ */
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:9px 18px;border-radius:20px;font-size:13px;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2200);
+}
+
+/* ══ KB BADGE ══ */
+function refreshKBBadge() {
+  fetch(`${SERVER_URL}/health`).then(r => r.json()).then(d => {
+    if (d.knowledge_base_exists && d.knowledge_base_size_kb > 0) {
+      document.getElementById('kb-badge').classList.add('visible');
+      document.getElementById('kb-size').textContent = d.knowledge_base_size_kb;
+    } else {
+      document.getElementById('kb-badge').classList.remove('visible');
+    }
+  }).catch(() => {});
+}
+
+/* ══ INIT ══ */
 buildMobileCats();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/static/sw.js');
 }
 
-(async () => {
-  try {
-    const d = await (await fetch(`${SERVER_URL}/health`)).json();
-    if (d.knowledge_base_exists && d.knowledge_base_size_kb > 0) {
-      document.getElementById('kb-badge').classList.add('visible');
-      document.getElementById('kb-size').textContent = d.knowledge_base_size_kb;
-    }
-  } catch {}
-})();
+refreshKBBadge();
 </script>
 </body>
 </html>

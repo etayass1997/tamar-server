@@ -5,11 +5,21 @@ import requests as http_requests
 import os
 import subprocess
 import sys
+import asyncio
+import io
+import edge_tts
+import threading
+import uuid
+import json as json_lib
+import re
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 CORS(app, origins="*")
 
 KNOWLEDGE_BASE_PATH = os.path.join(os.path.dirname(__file__), 'knowledge_base.txt')
+PREFERENCES_PATH = os.path.join(os.path.dirname(__file__), 'preferences.json')
+
+scrape_jobs = {}
 
 SYSTEM_PROMPT = """את תמר המהממת — עוזרת המטבח האישית שלך.
 
@@ -85,7 +95,6 @@ def search_knowledge(query):
         query_terms = query.lower().split()
         lines = content.split('\n')
 
-        # Split into sections by URL headers
         sections = []
         current = []
         for line in lines:
@@ -140,6 +149,32 @@ def web_search(query):
         return f"שגיאת חיפוש: {e}"
 
 
+@app.route('/tts', methods=['POST', 'OPTIONS'])
+def tts():
+    if request.method == 'OPTIONS':
+        return '', 204
+    text = (request.json or {}).get('text', '').strip()
+    if not text:
+        return jsonify({'error': 'no text'}), 400
+
+    async def _generate(t):
+        buf = io.BytesIO()
+        communicate = edge_tts.Communicate(t, 'he-IL-HilaNeural', rate='-5%', pitch='+5Hz')
+        async for chunk in communicate.stream():
+            if chunk['type'] == 'audio':
+                buf.write(chunk['data'])
+        buf.seek(0)
+        return buf
+
+    try:
+        loop = asyncio.new_event_loop()
+        buf = loop.run_until_complete(_generate(text))
+        loop.close()
+        return send_file(buf, mimetype='audio/mpeg', as_attachment=False)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/', methods=['GET'])
 def index():
     return send_file(os.path.join(os.path.dirname(__file__), 'תמר.html'))
@@ -172,22 +207,35 @@ def scrape():
     with open(sites_path, 'w', encoding='utf-8') as f:
         f.write('\n'.join(urls))
 
-    scraper_path = os.path.join(os.path.dirname(__file__), 'scraper.py')
-    try:
-        result = subprocess.run(
-            [sys.executable, scraper_path, sites_path, KNOWLEDGE_BASE_PATH],
-            capture_output=True, text=True, timeout=180, encoding='utf-8'
-        )
-        lines_scraped = result.stdout.count('סורק:')
-        return jsonify({
-            'success': True,
-            'message': f'נסרקו {lines_scraped} אתרים בהצלחה',
-            'log': result.stdout[-800:] if result.stdout else ''
-        })
-    except subprocess.TimeoutExpired:
-        return jsonify({'error': 'הסריקה ארכה יותר מדי זמן (מעל 3 דקות)'}), 504
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    job_id = str(uuid.uuid4())[:8]
+    scrape_jobs[job_id] = {'status': 'running', 'message': 'סריקה בפעילות...'}
+
+    def run_scrape():
+        scraper_path = os.path.join(os.path.dirname(__file__), 'scraper.py')
+        try:
+            result = subprocess.run(
+                [sys.executable, scraper_path, sites_path, KNOWLEDGE_BASE_PATH],
+                capture_output=True, text=True, timeout=180, encoding='utf-8'
+            )
+            stdout = result.stdout or ''
+            lines_scraped = stdout.count('סורק:')
+            scrape_jobs[job_id] = {
+                'status': 'done',
+                'message': f'נסרקו {lines_scraped} אתרים בהצלחה',
+                'log': stdout[-500:]
+            }
+        except subprocess.TimeoutExpired:
+            scrape_jobs[job_id] = {'status': 'error', 'message': 'הסריקה ארכה יותר מדי זמן (מעל 3 דקות)'}
+        except Exception as e:
+            scrape_jobs[job_id] = {'status': 'error', 'message': str(e)}
+
+    threading.Thread(target=run_scrape, daemon=True).start()
+    return jsonify({'job_id': job_id, 'status': 'started'})
+
+
+@app.route('/scrape-status/<job_id>', methods=['GET'])
+def scrape_status(job_id):
+    return jsonify(scrape_jobs.get(job_id, {'status': 'not_found', 'message': 'עבודה לא נמצאה'}))
 
 
 @app.route('/clear-kb', methods=['POST', 'OPTIONS'])
@@ -202,6 +250,61 @@ def clear_kb():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/shopping-list', methods=['POST', 'OPTIONS'])
+def shopping_list():
+    if request.method == 'OPTIONS':
+        return '', 204
+    data = request.json or {}
+    recipe_text = data.get('recipe', '')
+    if not recipe_text:
+        return jsonify({'error': 'לא סופק מתכון'}), 400
+
+    api_key = os.environ.get('ANTHROPIC_API_KEY')
+    if not api_key:
+        return jsonify({'error': 'ANTHROPIC_API_KEY לא מוגדר'}), 500
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model='claude-sonnet-5',
+            max_tokens=1300,
+            thinking={'type': 'disabled'},
+            messages=[{
+                'role': 'user',
+                'content': f"""הפק רשימת קניות ממתכון זה. החזר JSON בלבד ללא טקסט נוסף:
+{{"items": [{{"name": "שם הרכיב", "amount": "כמות ויחידה", "category": "קטגוריה"}}]}}
+
+קטגוריות: ירקות ופירות, בשר ועוף, מוצרי חלב וביצים, לחם ומאפייה, שמנים ותבלינים, קטניות ודגנים, שונות
+
+מתכון:
+{recipe_text}"""
+            }]
+        )
+        text = response.content[0].text
+        m = re.search(r'\{[\s\S]*\}', text)
+        if not m:
+            return jsonify({'error': 'לא הצלחתי ליצור רשימה'}), 500
+        result = json_lib.loads(m.group(0))
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/preferences', methods=['GET', 'POST', 'OPTIONS'])
+def preferences():
+    if request.method == 'OPTIONS':
+        return '', 204
+    if request.method == 'GET':
+        if os.path.exists(PREFERENCES_PATH):
+            with open(PREFERENCES_PATH, 'r', encoding='utf-8') as f:
+                return jsonify(json_lib.load(f))
+        return jsonify({})
+    data = request.json or {}
+    with open(PREFERENCES_PATH, 'w', encoding='utf-8') as f:
+        json_lib.dump(data, f, ensure_ascii=False, indent=2)
+    return jsonify({'success': True})
+
+
 @app.route('/chat', methods=['POST', 'OPTIONS'])
 def chat():
     if request.method == 'OPTIONS':
@@ -210,10 +313,29 @@ def chat():
     data = request.json
     messages = data.get('messages', [])
     category = data.get('category', '')
+    prefs = data.get('preferences', {})
 
     system = SYSTEM_PROMPT
     if category:
         system += f"\n\nהמשתמשת בחרה בקטגוריה: **{category}**. העדיפי מתכונים ומידע הקשורים לקטגוריה זו."
+
+    if prefs:
+        prefs_parts = []
+        dietary = prefs.get('dietary', [])
+        if dietary:
+            prefs_parts.append(f"הגבלות תזונתיות: {', '.join(dietary)}")
+        allergies = prefs.get('allergies', '').strip()
+        if allergies:
+            prefs_parts.append(f"אלרגיות: {allergies}")
+        family_size = prefs.get('family_size', '')
+        if family_size:
+            prefs_parts.append(f"מספר סועדים: {family_size}")
+        notes = prefs.get('notes', '').strip()
+        if notes:
+            prefs_parts.append(f"הערות נוספות: {notes}")
+        if prefs_parts:
+            system += "\n\n**העדפות המשתמשת:**\n" + "\n".join(f"- {p}" for p in prefs_parts)
+            system += "\nהתאימי את כל המתכונים והעצות להעדפות אלה."
 
     try:
         reply = call_claude(messages, system)
@@ -237,28 +359,27 @@ def call_claude(messages, system):
 
     for _ in range(8):
         response = client.messages.create(
-            model='claude-sonnet-4-6',
-            max_tokens=2500,
+            model='claude-sonnet-5',
+            max_tokens=3300,
+            thinking={'type': 'disabled'},
             system=system,
             tools=TOOLS,
             messages=msgs
         )
 
         if response.stop_reason == 'tool_use':
+            tool_blocks = [b for b in response.content if b.type == 'tool_use']
             tool_results = []
-            assistant_content = response.content
+            for block in tool_blocks:
+                fn = tool_fns.get(block.name)
+                result = fn(block.input) if fn else 'כלי לא ידוע'
+                tool_results.append({
+                    'type': 'tool_result',
+                    'tool_use_id': block.id,
+                    'content': result
+                })
 
-            for block in response.content:
-                if block.type == 'tool_use':
-                    fn = tool_fns.get(block.name)
-                    result = fn(block.input) if fn else 'כלי לא ידוע'
-                    tool_results.append({
-                        'type': 'tool_result',
-                        'tool_use_id': block.id,
-                        'content': result
-                    })
-
-            msgs.append({'role': 'assistant', 'content': assistant_content})
+            msgs.append({'role': 'assistant', 'content': response.content})
             msgs.append({'role': 'user', 'content': tool_results})
         else:
             text_blocks = [b for b in response.content if hasattr(b, 'text')]
@@ -269,4 +390,4 @@ def call_claude(messages, system):
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)

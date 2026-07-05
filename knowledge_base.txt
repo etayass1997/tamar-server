@@ -632,3 +632,12 @@ Instagram post 18202000042344774
 לכבוד חג השבועות מדור האוכל שלי במעריבסופהשבוע חגי
 Follow on Instagram
 כל הזכויות שמורות לפסקל פרץ-רובין
+=== https://www.example.com ===
+This domain is for use in documentation examples without needing permission. Avoid use in operations.
+=== https://www.google.com ===
+אפשר לחפש ב-Google גם ב:
+כיצד פועל החיפוש
+עשור שלישי לפעילות שלנו בתחום האקלים: למידע נוסף
+הנתונים שלך בחיפוש Google
+היסטוריית החיפושים
+אפליקציות Google
